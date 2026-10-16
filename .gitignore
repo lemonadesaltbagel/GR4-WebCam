@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.DS_Store
+.venv/
+# never commit RICOH firmware or built images
+*fwdc248b*.bin
+output/

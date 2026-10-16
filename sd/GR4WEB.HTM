@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GR IV Web</title>
+<style>
+  :root{--bg:#111;--fg:#eee;--mut:#9aa;--card:#1c1c20;--acc:#e8a33d;--line:#2c2c33;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 -apple-system,system-ui,sans-serif}
+  header{position:sticky;top:0;background:#000d;backdrop-filter:blur(6px);padding:10px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);z-index:5}
+  header h1{font-size:16px;margin:0;font-weight:600}
+  .dot{width:9px;height:9px;border-radius:50%;background:#555}
+  .dot.ok{background:#4cc76a}.dot.bad{background:#e2554b}
+  main{max-width:1000px;margin:0 auto;padding:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:0 0 14px}
+  .row{display:flex;flex-wrap:wrap;gap:8px 18px}
+  .row div{min-width:90px}.k{color:var(--mut);font-size:12px}.v{font-size:15px}
+  button{background:var(--acc);color:#111;border:0;border-radius:9px;padding:10px 16px;font-weight:600;font-size:15px;cursor:pointer}
+  button.sec{background:#2a2a30;color:var(--fg);border:1px solid var(--line)}
+  button:disabled{opacity:.5}
+  h2{font-size:14px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin:18px 4px 8px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .ph{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+  .ph img{width:100%;aspect-ratio:3/2;object-fit:cover;background:#000;display:block}
+  .ph .meta{padding:6px 8px;font-size:12px;display:flex;justify-content:space-between;gap:6px;align-items:center}
+  .ph a{color:var(--acc);text-decoration:none}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .seg button{background:#1c1c20;border:0;border-radius:0;padding:7px 12px;font-weight:500}
+  .seg button.on{background:var(--acc);color:#111}
+  pre{white-space:pre-wrap;word-break:break-word;font-size:12px;color:var(--mut);max-height:200px;overflow:auto}
+  .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#000e;border:1px solid var(--line);padding:10px 16px;border-radius:10px;opacity:0;transition:.2s;pointer-events:none}
+  .toast.show{opacity:1}
+  small{color:var(--mut)}
+</style>
+</head>
+<body>
+<header>
+  <span class="dot" id="dot"></span>
+  <h1>RICOH GR IV</h1>
+  <span style="flex:1"></span>
+  <small id="batt"></small>
+</header>
+<main>
+  <div class="card">
+    <div class="row" id="info"><div><div class="k">status</div><div class="v" id="st">connecting…</div></div></div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="align-items:center">
+      <button id="shoot">● Shoot</button>
+      <button class="sec" id="refresh">↻ Refresh</button>
+      <span style="flex:1"></span>
+      <label class="k" style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="lv"> Live view</label>
+    </div>
+    <img id="lvimg" style="display:none;width:100%;margin-top:12px;border-radius:10px;background:#000" alt="live view">
+    <div id="lvmsg" style="display:none;margin-top:12px;padding:16px;border:1px dashed var(--line);border-radius:10px;color:var(--mut);text-align:center;font-size:13px"></div>
+  </div>
+
+  <h2>Photos</h2>
+  <div class="card" style="padding:8px 10px">
+    <span class="seg" id="store"></span>
+    <span class="k" id="phcount" style="margin-left:10px"></span>
+  </div>
+  <div class="grid" id="gallery"></div>
+
+  <h2>Device</h2>
+  <div class="card"><pre id="props">…</pre></div>
+</main>
+<div id="lb" style="display:none;position:fixed;inset:0;background:#000e;z-index:20;flex-direction:column;align-items:center;justify-content:center;padding:14px" onclick="if(event.target.id==='lb')closeLightbox()">
+  <img id="lbimg" style="max-width:100%;max-height:70vh;border-radius:8px;object-fit:contain;background:#000">
+  <div id="lbinfo" class="k" style="margin-top:10px;text-align:center;max-width:92vw"></div>
+  <div style="margin-top:12px;display:flex;gap:10px">
+    <a id="lbdl" href="#" download><button class="sec">⬇ Download full</button></a>
+    <button class="sec" onclick="closeLightbox()">Close</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const API = location.origin + "/v1";
+const $ = s => document.querySelector(s);
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2200);}
+async function api(path, opt){ const r = await fetch(API+path, opt); const ct=r.headers.get("content-type")||""; if(ct.includes("json")) return r.json(); return r; }
+
+let props=null, curStore=null;
+
+async function poll(){
+  try{
+    const p = await api("/ping");
+    $("#dot").className = "dot ok"; $("#st").textContent = "connected · "+(p.datetime||"");
+  }catch(e){ $("#dot").className="dot bad"; $("#st").textContent="offline — on the camera's Wi-Fi?"; }
+}
+async function loadProps(){
+  try{
+    props = await api("/props");
+    $("#props").textContent = JSON.stringify(props,null,2);
+    if(props.battery!=null) $("#batt").textContent = "🔋 "+props.battery+"%";
+    const info=$("#info"); info.innerHTML="";
+    const kv=(k,v)=>{const d=document.createElement("div");d.innerHTML=`<div class="k">${k}</div><div class="v">${v??"—"}</div>`;info.appendChild(d);};
+    kv("model",props.model); kv("firmware",props.firmwareVersion); kv("serial",props.serialNo);
+    kv("battery",(props.battery??"—")+"%");
+    // storages
+    const seg=$("#store"); seg.innerHTML="";
+    (props.storages||[]).forEach((s,i)=>{
+      const b=document.createElement("button"); b.textContent=`${s.name} (${s.numOfPhotos||0})`;
+      b.onclick=()=>{curStore=s.name;[...seg.children].forEach(c=>c.classList.remove("on"));b.classList.add("on");loadPhotos();};
+      seg.appendChild(b); if(i===0){curStore=s.name;b.classList.add("on");}
+    });
+  }catch(e){ $("#props").textContent="props error: "+e; }
+}
+async function loadPhotos(){
+  const g=$("#gallery"); g.innerHTML="<small>loading…</small>";
+  try{
+    const r = await api("/photos"+(curStore?("?storageId="+encodeURIComponent(curStore)):""));
+    const dirs = r.dirs||[]; let n=0; g.innerHTML="";
+    dirs.forEach(d=>(d.files||[]).forEach(f=>{
+      n++;
+      const base = `/photos/${d.name}/${f}`;
+      const el=document.createElement("div"); el.className="ph";
+      el.innerHTML = `<img loading="lazy" src="${API+base}?size=thumb" onerror="this.style.opacity=.25">
+        <div class="meta"><span title="${f}">${f}</span><a href="${API+base}" download title="download full">⬇</a></div>`;
+      el.querySelector("img").onclick=()=>openLightbox(base,f);
+      g.appendChild(el);
+    }));
+    $("#phcount").textContent = n+" photos";
+    if(!n) g.innerHTML="<small>no photos</small>";
+  }catch(e){ g.innerHTML="<small>photos error: "+e+"</small>"; }
+}
+$("#shoot").onclick = async ()=>{
+  if(!confirm("Take a photo?")) return;
+  $("#shoot").disabled=true;
+  try{ await fetch(API+"/camera/shoot",{method:"POST"}); toast("shot taken"); setTimeout(loadPhotos,1500); }
+  catch(e){ toast("shoot failed"); }
+  $("#shoot").disabled=false;
+};
+$("#refresh").onclick = ()=>{loadProps().then(loadPhotos);};
+function startLive(){
+  const img=$("#lvimg"), msg=$("#lvmsg");
+  msg.style.display="none"; img.style.display="block";
+  img.onerror=()=>{ stopLive();
+    msg.textContent="Live view couldn't start (unplug USB; one viewer at a time)."; msg.style.display="block"; };
+  img.src = `http://${location.hostname}/v1/liveview?maxfps=15&reso=720x480`;
+}
+function stopLive(){
+  // stop live view and release the connection
+  const old=$("#lvimg");
+  if(old){
+    const fresh=document.createElement("img");
+    fresh.id="lvimg";
+    fresh.alt="live view";
+    fresh.style.cssText="display:none;width:100%;margin-top:12px;border-radius:10px;background:#000";
+    old.replaceWith(fresh);
+  }
+  $("#lvmsg").style.display="none";
+}
+$("#lv").onchange = e => e.target.checked ? startLive() : stopLive();
+// also end the remote session (return camera to normal) if the page is hidden/closed
+addEventListener("pagehide", ()=>{ if($("#lv").checked){ $("#lv").checked=false; stopLive(); } });
+document.addEventListener("visibilitychange", ()=>{ if(document.hidden && $("#lv").checked){ $("#lv").checked=false; stopLive(); } });
+
+async function openLightbox(base,name){
+  const lb=$("#lb"); lb.style.display="flex";
+  $("#lbimg").src = API+base+"?size=view";
+  $("#lbdl").href = API+base;
+  $("#lbinfo").textContent = name;
+  try{ const i=await api(base+"/info"); if(i&&i.errCode===200){
+    $("#lbinfo").textContent = `${name} · ${i.resolution||""} · ${i.aspectRatio||""} · f/${i.av} · ${i.tv}s · ISO${i.sv} · ${i.datetime||""}`;
+  }}catch(e){}
+}
+function closeLightbox(){ $("#lb").style.display="none"; $("#lbimg").removeAttribute("src"); }
+addEventListener("keydown",e=>{if(e.key==="Escape")closeLightbox();});
+
+poll(); loadProps().then(loadPhotos);
+setInterval(poll, 5000);
+</script>
+</body>
+</html>
