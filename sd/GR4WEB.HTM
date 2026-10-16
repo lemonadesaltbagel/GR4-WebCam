@@ -17,7 +17,7 @@
   *{box-sizing:border-box}
   html{-webkit-text-size-adjust:100%}
   body{margin:0;background:var(--table);color:var(--graphite);font:400 16px/1.5 var(--text)}
-  body.lb-open{overflow:hidden}
+  body.lb-open,body.fs-open{overflow:hidden}
   button,a{font:inherit;color:inherit}
   button{cursor:pointer}
   :focus-visible{outline:2px solid var(--marker);outline-offset:3px}
@@ -34,6 +34,7 @@
   [data-link=ok] .link .dot{background:var(--ok)}
   [data-link=bad] .link .dot{background:var(--marker)}
   .batt{margin:0;display:flex;align-items:center;gap:6px;font-size:17px}
+  .hot{margin:0;font-size:14px;font-weight:600;color:var(--marker)}
   .cell{position:relative;width:24px;height:12px;border:1.5px solid currentColor;border-radius:2px;padding:1px;align-self:center}
   .cell::after{content:"";position:absolute;right:-4px;top:3px;width:2px;height:4px;background:currentColor;border-radius:0 1px 1px 0}
   .cell i{display:block;height:100%;background:currentColor;border-radius:1px}
@@ -43,7 +44,8 @@
   main{max-width:880px;margin:0 auto;padding:16px calc(env(safe-area-inset-right) + var(--gut)) calc(env(safe-area-inset-bottom) + 48px) calc(env(safe-area-inset-left) + var(--gut))}
 
   /* viewfinder */
-  .finder{position:relative;aspect-ratio:3/2;background:var(--rebate);color:var(--edge);border-radius:3px;overflow:hidden;max-width:720px}
+  .cam{max-width:720px;background:var(--rebate);color:var(--edge);border-radius:3px;overflow:hidden}
+  .finder{position:relative;aspect-ratio:3/2;background:var(--rebate);color:var(--edge)}
   .finder::before{content:"";position:absolute;inset:14px;pointer-events:none;z-index:1;
     background:
       linear-gradient(var(--edge),var(--edge)) top left/18px 1.5px,linear-gradient(var(--edge),var(--edge)) top left/1.5px 18px,
@@ -59,7 +61,68 @@
   .finder.on .idle button{display:none}
   .live{position:absolute;z-index:2;left:12px;top:10px;margin:0;font:700 15px/1 var(--num);letter-spacing:.06em;color:#fff;display:flex;align-items:center;gap:6px;text-shadow:0 0 4px #000}
   .live::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--marker)}
-  .stop{position:absolute;z-index:2;right:10px;top:8px}
+.stop{position:absolute;z-index:2;right:10px;top:8px}
+  .fsbtn{position:absolute;z-index:2;right:8px;bottom:8px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.4);border-radius:3px;color:#fff;padding:0}
+  .fsbtn svg{width:18px;height:18px}
+
+  /* full-screen live view: the finder itself goes fixed so the stream never restarts */
+  .finder.full{position:fixed;inset:0;z-index:21;aspect-ratio:auto;max-width:none}
+  .finder.full::before,.finder.full .live,.finder.full .stop,.finder.full .fsbtn,.finder.full .idle{display:none}
+  .finder.full .lv{top:calc(env(safe-area-inset-top) + 60px);left:0;width:100%;height:calc(100% - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 250px)}
+  .finder.full::after{content:"";position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+  .finder.full.flash::after{animation:flash .28s ease-out}
+  @keyframes flash{0%{opacity:.85}100%{opacity:0}}
+  .fs{position:fixed;inset:0;z-index:22;pointer-events:none;color:var(--edge);display:grid;
+    grid-template-rows:auto 1fr auto;grid-template-areas:"top" "." "bottom";
+    padding:calc(env(safe-area-inset-top) + 10px) calc(env(safe-area-inset-right) + 14px) calc(env(safe-area-inset-bottom) + 16px) calc(env(safe-area-inset-left) + 14px)}
+  .fs button,.fs .expo{pointer-events:auto}
+  .fs-top{grid-area:top;display:flex;align-items:center;gap:12px}
+  .fs-top .live{position:static;flex:1}
+  .fs-bottom{grid-area:bottom;display:flex;flex-direction:column;align-items:center;gap:14px}
+  .fs .expo{justify-content:center;font-size:24px;gap:6px 16px}
+  .fs .expo .mode{font-size:16px}
+  .fs-shoot{width:100%;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px}
+  .fs-remain{margin:0;font-size:14px;color:#B9B6AC;text-align:left}
+  .fs-remain .num{display:block;font-size:22px;line-height:1;color:#fff}
+  .fs-warn{margin:0;font-size:13px;font-weight:600;color:#F06A5F;text-align:right}
+  .fs .shutter{width:76px;height:76px;border-color:#fff}
+  .fs .shutter span{background:#fff}
+  @media (orientation:landscape){
+    .finder.full .lv{top:0;height:100%;left:calc(env(safe-area-inset-left) + 128px);width:calc(100% - env(safe-area-inset-left) - env(safe-area-inset-right) - 252px)}
+    .fs{grid-template-columns:112px 1fr 108px;grid-template-rows:auto 1fr;grid-template-areas:"top . right" "expo . right";
+      padding:calc(env(safe-area-inset-top) + 12px) calc(env(safe-area-inset-right) + 12px) calc(env(safe-area-inset-bottom) + 12px) calc(env(safe-area-inset-left) + 12px)}
+    .fs-top{flex-direction:column;align-items:flex-start;gap:14px}
+    .fs-top .live{flex:none}
+    .fs-bottom{display:contents}
+    .fs .expo{grid-area:expo;align-self:start;margin-top:22px;flex-direction:column;align-items:flex-start;font-size:21px;gap:12px}
+    .fs-shoot{grid-area:right;align-self:center;grid-template-columns:1fr;justify-items:center;gap:10px}
+    .fs-remain,.fs-warn{text-align:center}
+  }
+  @media (prefers-reduced-motion:reduce){ .pending,.finder.full.flash::after{animation:none} }
+  /* info panel: the camera's current settings, joined to the viewfinder like the rear LCD's info bar */
+  .panel{border-top:1px solid #2B2B2B;padding:12px 14px 14px}
+  .expo{margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 20px;font:700 28px/1 var(--num);font-variant-numeric:tabular-nums;letter-spacing:.02em;color:#fff}
+  .expo .mode{font-size:19px;line-height:1;border:1.5px solid currentColor;border-radius:3px;padding:4px 7px 2px;min-width:2.1em;text-align:center}
+  .expo .zero{color:#6F6C64}
+  .expo .ev::after{content:"EV";margin-left:4px;font-size:15px;color:#8E8A7F}
+  .set{margin:14px 0 0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 16px}
+  .set div{min-width:0}
+  .set dt{font-size:12px;line-height:1.3;color:#8E8A7F;margin-bottom:5px}
+  .set dd{margin:0;font-size:15px;line-height:1.35;font-weight:500;color:var(--edge);overflow-wrap:anywhere}
+  .lock{display:inline-flex;align-items:center;gap:5px;margin-left:6px;font-size:13px;color:#7FD49B}
+  .lock::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+  .panel.stale .expo,.panel.stale .set dd{opacity:.45}
+  /* values the camera lets you change look tappable; opening one starts a change, closing the sheet cancels it */
+  .adj{cursor:pointer;border-radius:3px;background:rgba(255,255,255,.1);box-shadow:0 0 0 5px rgba(255,255,255,.1)}
+  .set .adj{color:#fff;width:fit-content;max-width:100%}
+  .set .adj::after{content:"";display:inline-block;width:6px;height:6px;margin:0 2px 3px 9px;border:solid currentColor;border-width:0 1.5px 1.5px 0;transform:rotate(45deg);opacity:.7}
+  .adj:active{background:rgba(255,255,255,.22);box-shadow:0 0 0 5px rgba(255,255,255,.22)}
+  .fixed{color:#8E8A7F}
+  .pending{animation:pend 1s ease-in-out infinite}
+  @keyframes pend{50%{opacity:.35}}
+  .panel.stale .adj{background:none;box-shadow:none;cursor:default}
+  @media (max-width:420px){ .set{grid-template-columns:repeat(2,minmax(0,1fr))} .expo{gap:6px 16px;font-size:25px} }
 
   .btn{display:inline-block;border:0;border-radius:3px;padding:10px 18px;font-weight:600;font-size:15px;text-decoration:none;background:var(--table-hi);color:var(--graphite)}
   .ghost{background:transparent;border:1px solid rgba(255,255,255,.4);border-radius:3px;padding:7px 14px;font-size:15px;color:#fff}
@@ -68,8 +131,13 @@
 
   /* shutter */
   .release{display:flex;align-items:center;justify-content:space-between;gap:16px;max-width:720px;padding:14px 0 6px}
-  .release p{margin:0;font-size:15px;color:var(--lead);max-width:30ch}
-  .release.armed p{color:var(--marker);font-weight:600}
+  .rel-info{min-width:0;display:flex;flex-direction:column;gap:4px}
+  .rel-info p{margin:0}
+  .remain{display:flex;align-items:baseline;gap:8px;font-size:15px;color:var(--lead)}
+  .remain .num{font-size:28px;line-height:1;color:var(--graphite)}
+  .hint{font-size:15px;color:var(--lead);max-width:32ch}
+  .warn{font-size:15px;font-weight:600;color:var(--marker);max-width:36ch}
+  .release.armed .hint{color:var(--marker);font-weight:600}
   .shutter{flex:none;width:72px;height:72px;border-radius:50%;border:2px solid var(--graphite);background:transparent;padding:5px}
   .shutter span{display:block;width:100%;height:100%;border-radius:50%;background:var(--graphite);transition:transform .1s}
   .shutter:active span{transform:scale(.94)}
@@ -85,6 +153,8 @@
   .stores{display:flex;flex-wrap:wrap;gap:4px 20px;margin:0 0 12px}
   .stores button{background:none;border:0;padding:6px 0 8px;font-size:15px;color:var(--lead)}
   .stores button .num{margin-left:6px;font-size:16px}
+  .stores button:disabled{cursor:default;opacity:.6}
+  .stores button .none{margin-left:6px;font-size:13px}
   .stores button[aria-selected=true]{color:var(--graphite);font-weight:600;
     background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 8' preserveAspectRatio='none'%3E%3Cpath d='M2 5.6C18 3.6 41 2.8 58 3.7s31 1.6 40-.6' fill='none' stroke='%23C8322B' stroke-width='2.4' stroke-linecap='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E") left bottom/100% 8px no-repeat}
   .sheet{background:var(--rebate);color:var(--edge);border-radius:2px;padding:6px 12px 10px;
@@ -106,9 +176,14 @@
   /* camera details */
   .camera{margin-top:36px;border-top:1px solid var(--rule);padding-top:4px}
   .camera summary{cursor:pointer;padding:10px 0;font-size:17px;font-weight:600}
-  .camera dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 24px;margin:4px 0 16px;font-size:15px}
+  .camera dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 24px;font-size:15px}
   .camera dt{color:var(--lead)}
   .camera dd{margin:0;overflow-wrap:anywhere}
+  .groups{margin:6px 0 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:22px 40px}
+  .grp{min-width:0}
+  .grp h3{margin:0 0 6px;padding-bottom:6px;border-bottom:1px solid var(--rule);font-size:15px;font-weight:600;line-height:1.3}
+  .grp dl{margin:0}
+  .reveal{margin-left:10px;padding:0}
   .raw summary{font-size:15px;font-weight:400;color:var(--lead)}
   pre{margin:0;white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.5;color:var(--lead);max-height:280px;overflow:auto;background:var(--table-hi);padding:12px;border-radius:2px}
 
@@ -124,6 +199,26 @@
   .meta{margin:4px 0 0;display:flex;flex-wrap:wrap;justify-content:center;gap:2px 14px;font-size:14px;color:#9C998F}
   .lb-act{display:flex;justify-content:center;align-items:center;gap:10px}
 
+  /* value picker (bottom sheet) */
+  .pick{position:fixed;inset:0;z-index:25;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;overscroll-behavior:none}
+  .pick-sheet{width:100%;max-width:560px;max-height:72vh;max-height:72dvh;display:flex;flex-direction:column;background:var(--table);
+    border-radius:14px 14px 0 0;box-shadow:0 -8px 40px rgba(0,0,0,.3);
+    padding:10px 14px calc(env(safe-area-inset-bottom) + 14px)}
+  .pick-head{flex:none;display:flex;align-items:center;gap:12px;padding:8px 4px 12px;border-bottom:1px solid var(--rule)}
+  .pick-head b{flex:1;font-size:17px;font-weight:600}
+  .pick-list{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;align-content:start;display:grid;grid-template-columns:repeat(auto-fill,minmax(94px,1fr));gap:8px;padding:14px 2px 2px}
+  .opt{border:1px solid var(--rule);background:var(--table-hi);border-radius:5px;padding:13px 8px;
+    font:700 17px/1.1 var(--num);color:var(--graphite);text-align:center;overflow-wrap:anywhere}
+  .opt[aria-current=true]{border-color:var(--marker);color:var(--marker);box-shadow:inset 0 0 0 1px var(--marker)}
+  .pick-list.long{grid-template-columns:1fr;gap:0;padding-top:4px}
+  .pick-list.long .opt{border:0;border-bottom:1px solid var(--rule);border-radius:0;background:none;padding:14px 4px;
+    font:500 16px/1.3 var(--text);text-align:left;display:flex;justify-content:space-between;align-items:center}
+  .pick-list.long .opt[aria-current=true]{box-shadow:none;border-color:var(--rule);font-weight:600}
+  .pick-list.long .opt[aria-current=true]::after{content:"Current";font-size:13px;font-weight:600}
+  .pick-cur{font:700 20px/1 var(--num);color:var(--lead)}
+  .pick:not([hidden]) .pick-sheet{animation:rise .2s ease-out}
+  @keyframes rise{from{transform:translateY(24px);opacity:.6}}
+  @media (prefers-reduced-motion:reduce){ .pick:not([hidden]) .pick-sheet{animation:none} }
   .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 20px);transform:translate(-50%,8px);z-index:30;
     background:var(--graphite);color:var(--table-hi);padding:10px 16px;border-radius:3px;font-size:15px;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;max-width:calc(100vw - 32px)}
   .toast.show{opacity:1;transform:translate(-50%,0)}
@@ -139,6 +234,7 @@
   <div class="bar-in">
     <h1 class="model" id="model">GR IV</h1>
     <p class="link"><span class="dot"></span><span id="st">Connecting…</span></p>
+    <p class="hot" id="hot" hidden>Camera hot</p>
     <p class="batt" id="batt" hidden><span class="cell" aria-hidden="true"><i id="battfill"></i></span><span class="num" id="battpct"></span></p>
   </div>
   <p class="offline" id="offline" hidden>Can't reach the camera. Check that the camera is on and this device is still on the GR4-WEB Wi-Fi network.</p>
@@ -146,6 +242,7 @@
 
 <main>
   <section aria-label="Shoot">
+    <div class="cam">
     <div class="finder" id="finder">
       <div class="idle">
         <p id="lvmsg">Live view is off.</p>
@@ -154,9 +251,32 @@
       <img id="lvimg" class="lv" alt="Live view from the camera" hidden>
       <p class="live" id="livetag" hidden>Live</p>
       <button class="ghost stop" id="lvstop" type="button" hidden>Stop live view</button>
+      <button class="fsbtn" id="fsopen" type="button" aria-label="Full screen" hidden><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M1 6V1h5M12 1h5v5M17 12v5h-5M6 17H1v-5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
+    </div>
+    <div class="panel stale" id="panel" aria-label="Current camera settings">
+      <p class="expo">
+        <span class="mode" id="x-mode" title="Exposure mode">–</span>
+        <span id="x-tv" title="Shutter speed">–</span>
+        <span id="x-av" title="Aperture">–</span>
+        <span id="x-sv" title="ISO">–</span>
+        <span id="x-xv" title="Exposure compensation">–</span>
+      </p>
+      <dl class="set">
+        <div><dt>White balance</dt><dd id="x-wb">–</dd></div>
+        <div><dt>Image control</dt><dd id="x-fx">–</dd></div>
+        <div><dt>Metering</dt><dd id="x-me">–</dd></div>
+        <div><dt>Focus</dt><dd><span id="x-af">–</span><span class="lock" id="x-lock" hidden>Locked</span></dd></div>
+        <div><dt>Drive</dt><dd id="x-dr">–</dd></div>
+        <div><dt>Format</dt><dd id="x-fmt">–</dd></div>
+      </dl>
+    </div>
     </div>
     <div class="release" id="release">
-      <p id="hint">Takes a photo with the camera's current settings.</p>
+      <div class="rel-info">
+        <p class="remain" id="remain" hidden><span class="num" id="remain-n"></span><span id="remain-l"></span></p>
+        <p class="hint" id="hint">Shoots with the settings above.</p>
+        <p class="warn" id="warn" hidden></p>
+      </div>
       <button class="shutter" id="shoot" type="button" aria-label="Take photo"><span></span></button>
     </div>
   </section>
@@ -173,7 +293,7 @@
 
   <details class="camera">
     <summary>Camera details</summary>
-    <dl id="info"></dl>
+    <div id="info" class="groups"></div>
     <details class="raw"><summary>All properties</summary><pre id="props">…</pre></details>
   </details>
 </main>
@@ -193,6 +313,25 @@
     <button class="ghost" id="lbnext" type="button">Next</button>
   </div>
 </div>
+<div id="fs" class="fs" role="dialog" aria-label="Full-screen live view" hidden>
+  <div class="fs-top">
+    <button class="ghost" id="fsclose" type="button">Close</button>
+    <p class="live">Live</p>
+  </div>
+  <div class="fs-bottom" id="fsbottom">
+    <div class="fs-shoot">
+      <p class="fs-remain" id="fsremain"></p>
+      <button class="shutter" id="fsshoot" type="button" aria-label="Take photo"><span></span></button>
+      <p class="fs-warn" id="fswarn"></p>
+    </div>
+  </div>
+</div>
+<div id="pick" class="pick" role="dialog" aria-modal="true" aria-labelledby="pick-title" hidden>
+  <div class="pick-sheet">
+    <div class="pick-head"><b id="pick-title"></b><span class="pick-cur" id="pick-cur"></span><button class="textbtn" id="pick-x" type="button">Close</button></div>
+    <div class="pick-list" id="pick-list"></div>
+  </div>
+</div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -208,41 +347,241 @@ async function poll(){
   try{
     const p = await api("/ping");
     document.body.dataset.link="ok"; $("#st").textContent="Connected"; $("#offline").hidden=true;
-    clock = p.datetime||""; renderInfo();
+    clock = p.datetime||""; if(!live && !document.hidden) refreshProps(); else renderInfo();
   }catch(e){
     document.body.dataset.link="bad"; $("#st").textContent="Not connected"; $("#offline").hidden=false;
   }
 }
 // "2026-10-14T17:21:40+09:00" -> "2026-10-14 17:21"
 const fmtTime = t => t ? String(t).replace("T"," ").replace(/:\d\d(\.\d+)?(Z|[+-]\d\d:?\d\d)?$/,"") : t;
+// shutter string: "1/250" stays; "1.50" -> 1.5"  (seconds)
+const fmtTv = v => v==null||v==="" ? "" : (/\//.test(v) ? v : Number(v)+'"');
+// "efc_HDRTone" -> "HDR Tone", "col_vivid" -> "Vivid", "off"/"" -> ""
+// names the camera's menu spells differently from what the id suggests
+const EFFECT_NAMES={hiContrastBW:"Hi-Contrast B&W",HDRTone:"HDR Tone"};
+const fmtEffect = v => { if(!v||v==="off") return ""; const k=String(v).replace(/^(efc_|col_)/,"");
+  return EFFECT_NAMES[k] || (s=>s.charAt(0).toUpperCase()+s.slice(1))(k.replace(/([A-Z]+)([A-Z][a-z])/g,"$1 $2").replace(/([a-z0-9])([A-Z])/g,"$1 $2")); };
+const fmtWB = v => v==="auto" ? "AWB" : v ? v.charAt(0).toUpperCase()+v.slice(1) : "";
+// humanize enum-ish strings, with friendlier names for the ones that need them
+const splitCaps = s => String(s).replace(/([a-z0-9])([A-Z])/g,"$1 $2");
+const cap = s => (s==null||s==="") ? "" : (t=>t.charAt(0).toUpperCase()+t.slice(1))(splitCaps(String(s)));
+const LBL = {
+  operationMode:{capture:"Capture",playback:"Playback"},
+  captureMode:{still:"Still",movie:"Movie"},
+  focusMode:{af:"Autofocus",mf:"Manual"},
+  focusSetting:{multiauto:"Multi AF",spot:"Spot AF",pinpoint:"Pinpoint AF",tracking:"Tracking AF",
+    continuous:"Continuous AF",snap:"Snap",inf:"Infinity",manual:"Manual",zone_select:"Zone select"},
+  meteringMode:{multi:"Multi-segment",center:"Center-weighted",spot:"Spot",highlight:"Highlight"},
+  shootMode:{single:"Single",continuous:"Continuous",self2s:"Self-timer 2 s",self10s:"Self-timer 10 s",
+    interval:"Interval",intervalComp:"Interval composite",multiExp:"Multiple exposure",bracket:"Bracket"},
+};
+const label = (field,v) => (LBL[field] && LBL[field][v]) || cap(v);
+const storeName = n => n==="in" ? "Internal memory" : n==="sd1" ? "SD card" : n;
+const secsToClock = s => { s=+s; if(!s) return ""; const h=Math.floor(s/3600),m=Math.round((s%3600)/60); return h?h+" h "+m+" min":m+" min"; };
+// "lat,lon,alt,time,datum" -> {pos:"23.09023, 114.43281", alt:"21.2 m", time:"2026-10-15 09:09"}
+function fmtGps(g){ if(!g) return {}; const a=String(g).split(","); if(a.length<2||!a[0]) return {};
+  return { pos:(+a[0]).toFixed(5)+", "+(+a[1]).toFixed(5), alt:a[2]?(+a[2]).toFixed(1)+" m":"", time:a[3]?fmtTime(a[3]):"" }; }
+const MODES={p:"P",av:"Av",tv:"Tv",m:"M",tav:"TAv",b:"B",t:"T",bt:"BT"};
+const fmtMode = v => v ? (MODES[String(v).toLowerCase()] || String(v)) : "";
+const fmtXv = v => { if(v==null||v==="") return ""; const n=Number(v); if(!isFinite(n)) return String(v);
+  return Math.abs(n)<0.01 ? "±0" : (n>0?"+":"−")+Math.abs(n).toFixed(1); };
+const fmtNum = n => n==null||n==="" ? "" : Number(n).toLocaleString("en-US");
+// the storage new shots go to: SD card when it can be written, otherwise the first writable one
+const activeStore = st => (st||[]).find(s=>s.name==="sd1"&&s.equipped&&s.writable) || (st||[]).find(s=>s.equipped&&s.writable);
 function renderInfo(){
-  const dl=$("#info"); dl.innerHTML="";
-  const kv=(k,v)=>{ dl.append(el("dt",null,k), el("dd",null,v==null||v===""?"—":v)); };
-  const p=props||{};
-  kv("Model",p.model); kv("Firmware",p.firmwareVersion); kv("Serial number",p.serialNo);
-  kv("Battery",p.battery!=null?p.battery+"%":null); kv("Camera clock",fmtTime(clock));
+  const host=$("#info"); host.innerHTML=""; const p=props||{};
+  const grp=(title,rows)=>{
+    const r=rows.filter(x=>x && x[1]!=null && x[1]!=="");
+    if(!r.length) return;
+    const g=el("section","grp"); g.append(el("h3",null,title));
+    const dl=el("dl"); r.forEach(([k,v])=>dl.append(el("dt",null,k), v instanceof Node ? (()=>{const d=el("dd");d.append(v);return d;})() : el("dd",null,String(v))));
+    g.append(dl); host.append(g);
+  };
+  grp("Camera",[
+    ["Model",p.model],["Firmware",p.firmwareVersion],["Serial number",p.serialNo],
+    ["Battery",p.battery!=null?p.battery+"%":null],
+    ["Temperature",p.hot!=null?(p.hot?"Hot":"Normal"):null],
+    ["Mode",label("operationMode",p.operationMode)],
+    ["Orientation",cap(p.cameraOrientation)],
+    ["Camera clock",fmtTime(clock||p.datetime)],
+  ]);
+  (p.storages||[]).forEach(s=>grp(storeName(s.name),[
+    ["Status",s.equipped?(s.writable?"Ready":(s.available?"Read-only":"Present")):"Not present"],
+    ["Photos",fmtNum(s.numOfPhotos)],["Movies",fmtNum(s.numOfMovies)],
+    ["Shots remaining",fmtNum(s.remain)],["Movie time left",secsToClock(s.recordableTime)],
+  ]));
+  grp("Capture",[
+    ["Capture mode",label("captureMode",p.captureMode)],
+    ["Still size",p.stillSize],
+    ["Movie size",p.movieSize],
+    ["AF frame",Array.isArray(p.focusEffectiveArea)?p.focusEffectiveArea.join(" × "):null],
+  ]);
+  const gps=fmtGps(p.gpsInfo);
+  grp("Location",[
+    ["Geotagging",cap(p.geoTagging)],
+    ["Last position",gps.pos],["Altitude",gps.alt],["Fix time",gps.time],
+  ]);
+  let key=null;
+  if(p.key){ key=el("span"); const v=el("span",null,"••••••••"); const b=el("button","textbtn reveal","Show"); b.type="button";
+    b.onclick=()=>{ const on=b.textContent==="Show"; v.textContent=on?p.key:"••••••••"; b.textContent=on?"Hide":"Show"; };
+    key.append(v,b); }
+  grp("Network",[
+    ["Transfer network",p.ssid],
+    ["Transfer password",key],
+    ["Bluetooth name",p.bdName],
+    ["Wi-Fi channel",p.channel!=null?String(p.channel):null],
+    ["MAC address",p.macAddress],
+  ]);
+  grp("Transfer",[
+    ["Send on power-off",cap(p.powerOffTransfer)],
+    ["Auto-resize",cap(p.autoResize)],
+  ]);
+}
+// fill the info panel, shutter row and top bar from /props
+function renderShooting(){
+  const p=props||{}, set=(id,v)=>{ if(pending[id.slice(1)]) return; $(id).textContent = v==null||v==="" ? "–" : v; };
+  $("#panel").classList.toggle("stale", !props);
+  set("#x-mode",fmtMode(p.exposureMode));
+  set("#x-tv",fmtTv(p.tv)); set("#x-av",p.av!=null?"f/"+p.av:""); set("#x-sv",p.sv!=null?"ISO "+p.sv:"");
+  const xv=fmtXv(p.xv); set("#x-xv",xv); $("#x-xv").classList.toggle("zero",xv==="±0"); $("#x-xv").classList.toggle("ev",!!xv);
+  set("#x-wb",fmtWB(p.WBMode)); set("#x-fx",p.effect!=null?(fmtEffect(p.effect)||"Off"):"");
+  set("#x-me",label("meteringMode",p.meteringMode));
+  // the AF area already says it's autofocus; manual focus has no area worth naming
+  set("#x-af", p.focusMode==="mf" ? label("focusMode","mf") : (label("focusSetting",p.focusSetting) || label("focusMode",p.focusMode)));
+  $("#x-lock").hidden = !(live && p.focused);
+  set("#x-dr",label("shootMode",p.shootMode));
+  set("#x-fmt",[p.stillFormat?String(p.stillFormat).toUpperCase():"",p.stillSize||""].filter(Boolean).join(" "));
+  // shots left on the card new photos go to
+  const st=activeStore(p.storages);
+  $("#remain").hidden = !st || st.remain==null;
+  if(st){ $("#remain-n").textContent=fmtNum(st.remain); $("#remain-l").textContent=(+st.remain===1?"shot":"shots")+" left on "+(st.name==="in"?"internal memory":storeName(st.name)); }
+  // things that stop or affect a shot
+  const warn = p.operationMode==="playback" ? "The camera is in playback. Switch it to shooting to take photos."
+    : (props && p.storages && !st) ? "No card space to save to. Insert an SD card or free up space."
+    : (st && +st.remain===0) ? "The card is full. Delete some photos on the camera to keep shooting."
+    : p.hot ? "The camera is hot. Give it a break to cool down." : "";
+  $("#warn").textContent=warn; $("#warn").hidden=!warn;
+  $("#fswarn").textContent = p.operationMode==="playback" ? "Camera in playback" : (st && +st.remain===0) ? "Card full" : p.hot ? "Camera hot" : "";
+  $("#fsremain").innerHTML=""; if(st && st.remain!=null){ $("#fsremain").append(el("span","num",fmtNum(st.remain)), (+st.remain===1?"shot":"shots")+" left"); }
+  $("#hot").hidden=!p.hot;
+  if(p.battery!=null){
+    const b=Math.max(0,Math.min(100,+p.battery));
+    $("#batt").hidden=false; $("#batt").classList.toggle("low",b<20);
+    $("#battfill").style.width=b+"%"; $("#battpct").textContent=b+"%";
+    $("#batt").setAttribute("aria-label","Battery "+b+"%");
+  }
+  markControls();
+}
+
+// ---- camera controls: PUT /v1/params/camera, form-urlencoded, values sent verbatim ----
+// (the server does not URL-decode the body, and every list value is already in accepted form)
+async function setParam(key, value){
+  try{
+    const r = await fetch(API+"/params/camera", {method:"PUT",
+      headers:{"Content-Type":"application/x-www-form-urlencoded"}, body: key+"="+value});
+    let j=null; try{ j=await r.json(); }catch(_){}
+    if(r.ok && j && j.errCode===200){
+      props = Object.assign(props||{}, j); delete props.errCode; delete props.errMsg;
+      $("#props").textContent = JSON.stringify(props,null,2);
+      renderShooting(); renderInfo();
+      refreshProps();                 // pick up metering side-effects (e.g. auto-ISO) and list changes
+      return true;
+    }
+    throw new Error((j&&j.errMsg)||r.status);
+  }catch(e){ toast("The camera didn't accept that setting."); return false; }
+}
+const CTRL=[
+  {id:"x-tv", key:"tv", list:"tvList", title:"Shutter speed", fmt:fmtTv,
+   locked:"The camera sets the shutter in this mode. Turn the camera's mode dial to Tv, TAv or M to set it here."},
+  {id:"x-av", key:"av", list:"avList", title:"Aperture", fmt:v=>"f/"+v,
+   locked:"The camera sets the aperture in this mode. Use the camera's mode dial (Av or M) to control it."},
+  {id:"x-sv", key:"sv", list:"svList", title:"ISO", fmt:v=>v==="auto"?"Auto":"ISO "+v, values:p=>["auto"].concat(p.svList||[])},
+  {id:"x-xv", key:"xv", list:"xvList", title:"Exposure compensation", fmt:fmtXv},
+  {id:"x-wb", key:"WBMode", list:"WBModeList", title:"White balance", fmt:fmtWB},
+  {id:"x-fx", key:"effect", list:"effectList", title:"Image control", fmt:v=>fmtEffect(v)||"Off"},
+  {id:"x-me", key:"meteringMode", list:"meteringModeList", title:"Metering", fmt:v=>label("meteringMode",v)},
+  {id:"x-dr", key:"shootMode", list:"shootModeList", title:"Drive mode", fmt:v=>label("shootMode",v)},
+];
+const ctrlValues = c => { const p=props||{}; return c.values ? c.values(p) : (p[c.list]||[]); };
+const settable = c => !!props && props.operationMode!=="playback" && ctrlValues(c).length>1;
+const pending={};
+function markControls(){
+  CTRL.forEach(c=>{ const e=$("#"+c.id); if(!e) return; const on=settable(c);
+    e.classList.toggle("adj",on);
+    e.classList.toggle("fixed", !!props && !on && !!c.locked);
+    if(on){ e.setAttribute("role","button"); e.tabIndex=0; e.setAttribute("aria-label",c.title+": "+e.textContent+". Tap to change."); }
+    else{ e.removeAttribute("role"); e.removeAttribute("tabindex"); e.removeAttribute("aria-label"); }
+  });
+}
+function openPicker(c){
+  const p=props||{}, list=ctrlValues(c); if(list.length<2) return;
+  $("#pick-title").textContent=c.title;
+  const box=$("#pick-list"); box.innerHTML=""; const curVal=p[c.key];
+  // short exposure values read best as a grid; names like "Hi-Contrast B&W" as a list that marks the current one
+  const long=list.some(v=>String(c.fmt(v)).length>9); box.classList.toggle("long",long);
+  $("#pick-cur").textContent = !long && curVal!=null ? c.fmt(curVal) : "";
+  list.forEach(v=>{ const b=el("button","opt",c.fmt(v)); b.type="button";
+    if(String(v)===String(curVal)) b.setAttribute("aria-current","true");
+    b.onclick=async()=>{ closePick(); if(String(v)===String(curVal)) return;
+      const e=$("#"+c.id); e.textContent=c.fmt(v); e.classList.add("pending"); pending[c.id]=true;
+      await setParam(c.key,v);
+      delete pending[c.id]; e.classList.remove("pending"); renderShooting(); };
+    box.appendChild(b); });
+  $("#pick").hidden=false; document.body.classList.add("lb-open");
+  // start with the current value in the middle of the list, without moving the page behind
+  box.scrollTop=0; const sel=box.querySelector("[aria-current=true]");
+  if(sel) box.scrollTop = Math.max(0, sel.offsetTop - box.offsetTop - (box.clientHeight - sel.offsetHeight)/2);
+}
+function closePick(){ $("#pick").hidden=true; if($("#lb").hidden) document.body.classList.remove("lb-open"); }
+function onCtrl(c){
+  if(settable(c)) openPicker(c); else if(c.locked && props) toast(c.locked);
+}
+CTRL.forEach(c=>{ const e=$("#"+c.id); if(!e) return;
+  e.addEventListener("click",()=>onCtrl(c));
+  e.addEventListener("keydown",ev=>{ if(ev.key==="Enter"||ev.key===" "){ ev.preventDefault(); onCtrl(c); } });
+});
+$("#pick-x").onclick=closePick;
+$("#pick").addEventListener("click",e=>{ if(e.target.id==="pick") closePick(); });
+// drags outside the list (backdrop, header) must not scroll the page behind the sheet
+$("#pick").addEventListener("touchmove",e=>{ if(!e.target.closest(".pick-list")) e.preventDefault(); },{passive:false});
+addEventListener("keydown",e=>{ if(e.key!=="Escape") return; if(!$("#pick").hidden) closePick(); else if(fsOn) exitFs(); });
+
+// storage tabs: rebuilt only when the set of storages changes, counts updated in place
+function renderStores(){
+  const seg=$("#store"), st=(props&&props.storages)||[];
+  const sig=st.map(s=>s.name+(s.equipped===false?"-":"")).join("|");
+  if(seg.dataset.sig!==sig){
+    seg.dataset.sig=sig; seg.innerHTML="";
+    if(curStore && !st.some(s=>s.name===curStore && s.equipped!==false)) curStore=null;
+    st.forEach(s=>{
+      const b=el("button",null,storeName(s.name)); b.type="button"; b.setAttribute("role","tab"); b.dataset.name=s.name;
+      if(s.equipped===false){ b.disabled=true; b.append(el("span","none","No card")); }
+      else b.append(el("span","num"));
+      if(!curStore && s.equipped!==false) curStore=s.name;
+      b.onclick=()=>{curStore=s.name;[...seg.children].forEach(c=>c.setAttribute("aria-selected","false"));b.setAttribute("aria-selected","true");loadPhotos();};
+      seg.appendChild(b);
+    });
+  }
+  [...seg.children].forEach(b=>{ const s=st.find(x=>x.name===b.dataset.name);
+    b.setAttribute("aria-selected",String(b.dataset.name===curStore));
+    const n=b.querySelector(".num"); if(n&&s) n.textContent=fmtNum(s.numOfPhotos||0); });
+}
+function applyProps(p){
+  props=p;
+  $("#props").textContent = JSON.stringify(p,null,2);
+  if(p.model) $("#model").textContent = String(p.model).replace(/^RICOH\s+/i,"");
+  renderInfo(); renderShooting(); renderStores();
+}
+let propsBusy=false;
+async function refreshProps(){
+  if(propsBusy) return; propsBusy=true;
+  try{ const p=await api("/props"); if(p && (p.errCode==null || p.errCode===200)) applyProps(p); }
+  catch(e){}
+  propsBusy=false;
 }
 async function loadProps(){
-  try{
-    props = await api("/props");
-    $("#props").textContent = JSON.stringify(props,null,2);
-    if(props.model) $("#model").textContent = String(props.model).replace(/^RICOH\s+/i,"");
-    if(props.battery!=null){
-      const b=Math.max(0,Math.min(100,+props.battery));
-      $("#batt").hidden=false; $("#batt").classList.toggle("low",b<20);
-      $("#battfill").style.width=b+"%"; $("#battpct").textContent=b+"%";
-      $("#batt").setAttribute("aria-label","Battery "+b+"%");
-    }
-    renderInfo();
-    const seg=$("#store"); seg.innerHTML="";
-    (props.storages||[]).forEach((s,i)=>{
-      const b=el("button",null,s.name); b.type="button"; b.setAttribute("role","tab");
-      b.append(el("span","num",String(s.numOfPhotos||0)));
-      b.setAttribute("aria-selected", String(s.name===curStore || (!curStore && i===0)));
-      b.onclick=()=>{curStore=s.name;[...seg.children].forEach(c=>c.setAttribute("aria-selected","false"));b.setAttribute("aria-selected","true");loadPhotos();};
-      seg.appendChild(b); if(!curStore && i===0) curStore=s.name;
-    });
-  }catch(e){ $("#props").textContent="Couldn't read camera properties: "+e; }
+  try{ applyProps(await api("/props")); }
+  catch(e){ $("#props").textContent="Couldn't read camera properties: "+e; }
 }
 
 // R0001234.JPG -> "1234", "JPG"
@@ -279,7 +618,7 @@ async function loadPhotos(){
 }
 
 // shutter: first tap arms, second tap shoots
-const HINT="Takes a photo with the camera's current settings.";
+const HINT="Shoots with the settings above.";
 let armT=null;
 function disarm(){ clearTimeout(armT); $("#release").classList.remove("armed"); $("#hint").textContent=HINT; $("#shoot").setAttribute("aria-label","Take photo"); }
 $("#shoot").onclick = async ()=>{
@@ -288,19 +627,61 @@ $("#shoot").onclick = async ()=>{
     rel.classList.add("armed"); $("#hint").textContent="Tap the shutter again to take the photo.";
     b.setAttribute("aria-label","Confirm: take photo"); armT=setTimeout(disarm,3000); return;
   }
-  disarm(); b.disabled=true; $("#hint").textContent="Taking photo…";
-  try{ const r=await fetch(API+"/camera/shoot",{method:"POST"}); if(!r.ok) throw new Error(r.status); toast("Photo taken"); setTimeout(loadPhotos,1500); }
-  catch(e){ toast("The camera didn't take the photo. Try again."); }
-  b.disabled=false; $("#hint").textContent=HINT;
+  disarm(); $("#hint").textContent="Taking photo…";
+  await shoot();
+  $("#hint").textContent=HINT;
 };
+let shooting=false;
+async function shoot(){
+  if(shooting) return; shooting=true;
+  $("#shoot").disabled=true; $("#fsshoot").disabled=true;
+  try{ const r=await fetch(API+"/camera/shoot",{method:"POST"}); if(!r.ok) throw new Error(r.status);
+    if(fsOn){ const f=$("#finder"); f.classList.remove("flash"); void f.offsetWidth; f.classList.add("flash"); }
+    toast("Photo taken"); setTimeout(()=>{ loadPhotos(); refreshProps(); },1500); }
+  catch(e){ toast("The camera didn't take the photo. Try again."); }
+  $("#shoot").disabled=false; $("#fsshoot").disabled=false; shooting=false;
+}
+// you only get to full screen on purpose, so its shutter fires on one tap
+$("#fsshoot").onclick = shoot;
 $("#refresh").onclick = ()=>{loadProps().then(loadPhotos);};
 
 // live view
 let live=false;
 function setLive(on){
   live=on; $("#finder").classList.toggle("on",on);
-  $("#livetag").hidden=!on; $("#lvstop").hidden=!on;
+  $("#livetag").hidden=!on; $("#lvstop").hidden=!on; $("#fsopen").hidden=!on;
+  if(!on) exitFs();
 }
+
+// full-screen live view
+let fsOn=false, wake=null, expoHome=null;
+function enterFs(){
+  if(fsOn || !live) return; fsOn=true;
+  $("#finder").classList.add("full"); $("#fs").hidden=false; document.body.classList.add("fs-open");
+  // the exposure readout (and its controls) moves into full screen and back
+  const expo=$(".expo"); expoHome=expo.parentNode; $("#fsbottom").prepend(expo);
+  try{ history.pushState({gr4fs:1},""); }catch(e){}
+  try{ const r=document.documentElement.requestFullscreen; if(r) r.call(document.documentElement,{navigationUI:"hide"}).catch(()=>{}); }catch(e){}
+  try{ navigator.wakeLock && navigator.wakeLock.request("screen").then(l=>{ wake=l; }).catch(()=>{}); }catch(e){}
+  $("#fsclose").focus();
+}
+function exitFs(){
+  if(!fsOn) return; fsOn=false;
+  $("#finder").classList.remove("full","flash"); $("#fs").hidden=true; document.body.classList.remove("fs-open");
+  if(expoHome) expoHome.prepend($(".expo"));
+  try{ if(document.fullscreenElement) document.exitFullscreen().catch(()=>{}); }catch(e){}
+  try{ wake && wake.release(); }catch(e){} wake=null;
+  try{ if(history.state && history.state.gr4fs) history.back(); }catch(e){}
+  if(live) $("#fsopen").focus();
+}
+$("#fsopen").onclick=enterFs;
+$("#fsclose").onclick=exitFs;
+// the phone's back gesture leaves full screen instead of the page
+addEventListener("popstate",()=>{ if(fsOn) exitFs(); });
+// while live view runs, refresh settings often so metering changes show up
+let liveT=null;
+function startLiveProps(){ clearInterval(liveT); refreshProps(); liveT=setInterval(refreshProps,1200); }
+function stopLiveProps(){ clearInterval(liveT); liveT=null; renderShooting(); }
 function startLive(){
   const img=$("#lvimg");
   $("#lvmsg").textContent="Starting live view…"; $("#lvmsg").className="";
@@ -308,14 +689,14 @@ function startLive(){
     $("#lvmsg").textContent="Live view didn't start. Unplug the camera's USB cable and stop live view on any other device, then try again.";
     $("#lvmsg").className="err"; $("#lvstart").textContent="Try again"; };
   img.src = `http://${location.hostname}/v1/liveview?maxfps=15&reso=720x480`;
-  img.hidden=false; setLive(true);
+  img.hidden=false; setLive(true); startLiveProps();
 }
 function stopLive(){
   // swap in a fresh <img> so the browser drops the stream and releases the camera
   const old=$("#lvimg");
   if(old){ const fresh=el("img","lv"); fresh.id="lvimg"; fresh.alt="Live view from the camera"; fresh.hidden=true; old.replaceWith(fresh); }
   $("#lvmsg").textContent="Live view is off."; $("#lvmsg").className=""; $("#lvstart").textContent="Start live view";
-  setLive(false);
+  setLive(false); stopLiveProps();
 }
 $("#lvstart").onclick = startLive;
 $("#lvstop").onclick = ()=>{ stopLive(); $("#lvstart").focus(); };
@@ -341,7 +722,7 @@ async function showFrame(){
   try{ const i=await api(base+"/info"); if(frames[cur]?.base!==base) return; if(i&&i.errCode===200){
     const ex=$("#lbexif");
     if(i.av!=null) ex.appendChild(el("span",null,"f/"+i.av));
-    if(i.tv!=null) ex.appendChild(el("span",null,/\//.test(i.tv)?i.tv:i.tv+"s"));
+    if(i.tv!=null) ex.appendChild(el("span",null,fmtTv(i.tv)));
     if(i.sv!=null) ex.appendChild(el("span",null,"ISO "+i.sv));
     [i.resolution,i.aspectRatio,fmtTime(i.datetime)].forEach(v=>{ if(v) meta.appendChild(el("span",null,v)); });
   }}catch(e){}
